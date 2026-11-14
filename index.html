@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>DNVB Sosmed Tracker · Social listening & analisis sentimen brand</title>
+  <meta name="description" content="DNVB Sosmed Tracker: pantau percakapan tentang brand di Instagram, TikTok, Threads, YouTube, dan media web, lalu baca sentimen positif, netral, dan negatif dalam satu dashboard.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F55D9E">
+  <link rel="icon" href="/dnvb/shape-flower.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&display=swap">
+  <style>
+    /* ==========================================================================================
+       DNVB Sosmed Tracker: landing page
+       Bahasa visual, komponen, dan motion mengikuti dnvbindonesia.com (CSS produksi, Nov 2026):
+       - Plus Jakarta Sans 200-800, judul 700, teks hitam #101820, sekunder #585E63
+       - Pink #F55D9E (tombol utama, hover jadi biru #346BC8), badge biru lembut, garis #E7E8E9
+       - Section gelap navy #0D1420 dengan sudut kiri atas membulat besar
+       - Bentuk dekoratif: bunga oranye #FF6D00, "D" hijau #1DD460, titik navy/biru/kuning
+       - Motion: tombol panah (panah kanan keluar, panah kiri masuk, 300ms ease-in-out),
+         reveal fade 400ms + slide-up 500ms "ease" berurutan (react-awesome-reveal),
+         marquee linear tanpa henti (react-fast-marquee), parallax bentuk saat gulir,
+         bilah progres pink di atas (nprogress), tombol kembali ke atas pink bulat.
+       ========================================================================================== */
+    :root {
+      --pink: #f55d9e;
+      --pink-soft: #feeff5;
+      --blue: #346bc8;
+      --blue-soft: #eaf0fa;
+      --ink: #101820;
+      --ink-2: #282f36;
+      --gray: #585e63;
+      --line: #e7e8e9;
+      --tile: #f4f4f5;
+      --navy: #0d1420;
+      --navy-2: #192430;
+      --orange: #ff6d00;
+      --green: #1dd460;
+      --yellow: #f4bf41;
+      --purple: #5b2bea;
+      --ease: cubic-bezier(.4, 0, .2, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; color: var(--ink); background: #fff; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+    button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 8px; }
+    .wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+    @media (min-width: 900px) { .wrap { padding: 0 40px; } }
+
+    /* --------------------------- nprogress (bilah pink atas) --------------------------- */
+    #nprogress { position: fixed; inset: 0 0 auto; height: 4px; z-index: 100; background: var(--pink); box-shadow: 0 0 10px var(--pink), 0 0 5px var(--pink); transform-origin: left; transform: scaleX(0); transition: transform .6s ease, opacity .4s ease .4s; }
+
+    /* ------------------------------------ navbar ------------------------------------ */
+    .nav { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); transition: box-shadow .3s; }
+    .nav.scrolled { box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(16,24,32,.05); }
+    .nav-in { height: 72px; display: flex; align-items: center; gap: 40px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { height: 28px; width: auto; }
+    .brand span { font-size: 12px; font-weight: 700; line-height: 1.15; padding-left: 12px; border-left: 1px solid var(--line); }
+    .links { display: none; gap: 28px; font-size: 13px; color: var(--ink-2); }
+    .links a { position: relative; padding: 6px 0; transition: color .2s; }
+    .links a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; border-radius: 2px; background: var(--pink); transform: scaleX(0); transition: transform .3s var(--ease); }
+    .links a:hover { color: var(--pink); }
+    .links a:hover::after { transform: scaleX(1); }
+    .nav-cta { margin-left: auto; display: flex; align-items: center; gap: 22px; font-size: 13px; font-weight: 600; }
+    .nav-cta .login { display: none; }
+    .nav-cta .login:hover { color: var(--pink); }
+    .pill { display: inline-flex; align-items: center; height: 40px; padding: 0 22px; border-radius: 999px; background: var(--pink); color: #fff; font-weight: 600; font-size: 13px; transition: background-color .3s var(--ease); }
+    .pill:hover { background: var(--blue); }
+    @media (min-width: 900px) { .links, .nav-cta .login { display: flex; } }
+
+    /* -------------------------- tombol panah DNVB (.btn-arrow) -------------------------- */
+    .btn-arrow { --g: 18px; --a: 20px; position: relative; display: inline-flex; align-items: center; overflow: hidden; height: 46px; border-radius: 999px; background: var(--pink); color: #fff; font-weight: 600; font-size: 15px; white-space: nowrap; transition: background-color .3s ease-in-out; }
+    .btn-arrow:hover { background: var(--blue); }
+    .btn-arrow > span { display: flex; align-items: center; gap: var(--g); padding: 0 var(--g); margin-left: calc(-1 * (var(--g) + var(--a))); transition: transform .3s ease-in-out; }
+    .btn-arrow:hover > span { transform: translateX(calc(var(--g) + var(--a))); }
+    .btn-arrow img { width: var(--a); height: var(--a); flex: none; }
+    .btn-arrow.sm { --a: 16px; --g: 16px; height: 38px; font-size: 13px; }
+    .btn-arrow.grad { background-image: linear-gradient(120deg, var(--pink), var(--blue)); }
+
+    /* ------------------------------------ eyebrow ------------------------------------ */
+    .eyebrow { display: inline-flex; align-items: center; height: 28px; padding: 0 14px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+    .eyebrow.dark { background: #000; color: #fff; }
+    .eyebrow.pink { background: var(--pink-soft); color: var(--pink); }
+
+    /* ------------------------------------ reveal ------------------------------------ */
+    @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes rise { from { opacity: 0; transform: translate3d(0, 100%, 0) } to { opacity: 1; transform: none } }
+    @keyframes rise-sm { from { opacity: 0; transform: translate3d(0, 36px, 0) } to { opacity: 1; transform: none } }
+    [data-r] { opacity: 0; }
+    [data-r].in { animation: rise-sm .5s ease both; animation-delay: var(--d, 0s); }
+    [data-r="fade"].in { animation: fade .4s ease both; animation-delay: var(--d, 0s); }
+    .line-mask { display: block; overflow: hidden; }
+    .line-mask > span { display: inline-block; }
+    .in .line-mask > span, .line-mask.in > span { animation: rise .5s ease both; animation-delay: var(--d, 0s); }
+    @media (max-width: 760px) { .line-mask, .line-mask > span { display: inline; } .line-mask::after { content: ' '; } }
+    @media (prefers-reduced-motion: reduce) { [data-r] { opacity: 1 !important; animation: none !important } .marquee-track { animation: none !important } * { transition: none !important } }
+
+    /* ------------------------------------ hero ------------------------------------ */
+    .hero { position: relative; padding: 64px 0 24px; text-align: center; }
+    .hero h1 { max-width: 760px; margin: 18px auto 0; font-size: clamp(31px, 4.4vw, 50px); line-height: 1.22; font-weight: 700; letter-spacing: -.01em; }
+    .hero h1 em { font-style: normal; color: var(--pink); }
+    .hero p { max-width: 560px; margin: 18px auto 0; font-size: clamp(14px, 1.2vw, 16px); line-height: 1.6; color: var(--ink-2); }
+    .hero .ctas { margin-top: 32px; display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .ghost { display: inline-flex; align-items: center; height: 46px; padding: 0 22px; border-radius: 999px; border: 1px solid var(--line); font-weight: 600; font-size: 15px; transition: border-color .3s, color .3s; }
+    .ghost:hover { border-color: var(--blue); color: var(--blue); }
+    .shape { position: absolute; will-change: transform; pointer-events: none; display: none; }
+    @media (min-width: 900px) { .shape { display: block; } }
+    .s-flower { width: 100px; top: 120px; left: 6%; }
+    .s-d { width: 100px; top: 170px; right: 6%; }
+    .dot { position: absolute; border-radius: 50%; display: none; will-change: transform; pointer-events: none; }
+    @media (min-width: 900px) { .dot { display: block; } }
+    .d1 { width: 20px; height: 20px; background: var(--ink); top: 40px; left: 22%; }
+    .d2 { width: 16px; height: 16px; background: var(--blue); top: 330px; left: 13%; }
+    .d3 { width: 16px; height: 16px; background: var(--yellow); top: 100px; right: 22%; }
+    .d4 { width: 16px; height: 16px; background: var(--ink); top: 330px; right: 17%; }
+
+    /* ------------------------- marquee kartu sebutan (gaya speaker) ------------------------- */
+    .marquee { position: relative; overflow: hidden; display: flex; }
+    .marquee:hover .marquee-track { animation-play-state: paused; }
+    .marquee-track { flex: 0 0 auto; display: flex; min-width: 100%; animation: scroll var(--dur, 40s) linear infinite; }
+    @keyframes scroll { from { transform: translateX(0) } to { transform: translateX(-100%) } }
+    .cards { padding: 56px 0 48px; }
+    .mcard { position: relative; flex: none; width: 240px; height: 300px; margin: 0 15px; border-radius: 14px; overflow: hidden; color: #fff; display: flex; flex-direction: column; padding: 20px; transition: transform .3s var(--ease); }
+    .mcard:hover { transform: translateY(-6px); }
+    .mcard .plat { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+    .mcard .plat svg { width: 18px; height: 18px; fill: #fff; }
+    .mcard q { display: block; margin-top: 18px; font-size: 17px; line-height: 1.4; font-weight: 600; quotes: '“' '”'; }
+    .mcard .shade { position: absolute; inset: auto 0 0; height: 50%; background: linear-gradient(to top, rgba(0,0,0,.55), transparent); pointer-events: none; }
+    .mcard .meta { position: relative; z-index: 1; margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+    .sent { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #fff; }
+    .sent.pos { color: #0b7a37; } .sent.neg { color: #c2410c; } .sent.neu { color: var(--blue); }
+    .cards-note { text-align: center; font-size: 11.5px; color: var(--gray); margin-top: 18px; }
+
+    /* ------------------------------ kanal (logo strip) ------------------------------ */
+    .channels { padding: 24px 0 72px; }
+    .channels-in { display: flex; flex-direction: column; gap: 22px; align-items: flex-start; }
+    .channels h3 { font-size: 20px; line-height: 1.3; font-weight: 600; max-width: 260px; }
+    .logos { display: flex; flex-wrap: wrap; gap: 26px 40px; align-items: center; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; color: var(--ink); opacity: .9; transition: opacity .3s, transform .3s; }
+    .logo:hover { opacity: 1; transform: translateY(-2px); }
+    .logo svg { width: 26px; height: 26px; }
+    @media (min-width: 900px) { .channels-in { flex-direction: row; align-items: center; gap: 56px; } }
+
+    /* --------------------------- section gelap (fitur, tab) --------------------------- */
+    .dsec { background: var(--navy); color: #fff; border-radius: 96px 96px 0 0; padding: 72px 0 90px; position: relative; }
+    @media (max-width: 700px) { .dsec { border-radius: 48px 48px 0 0; } }
+    .dsec h2 { margin-top: 14px; font-size: clamp(26px, 3vw, 36px); line-height: 1.25; font-weight: 700; max-width: 520px; }
+    .dsec .lead { margin-top: 10px; font-size: 14px; color: #cfd1d2; }
+    .tabs { margin-top: 36px; display: flex; gap: 34px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,.08); scrollbar-width: none; }
+    .tab { position: relative; padding: 12px 0 14px; font-size: 14px; color: #a9b0b8; white-space: nowrap; transition: color .3s; }
+    .tab::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 3px; background: var(--pink); transform: scaleX(0); transition: transform .3s var(--ease); }
+    .tab[aria-selected="true"] { color: #fff; font-weight: 700; }
+    .tab[aria-selected="true"]::after { transform: scaleX(1); }
+    .tab:hover { color: #fff; }
+    .panels { margin-top: 36px; }
+    .tpanel { display: none; grid-template-columns: 1fr; gap: 22px; }
+    .tpanel.on { display: grid; animation: fade .4s ease both; }
+    @media (min-width: 760px) { .tpanel { grid-template-columns: repeat(3, 1fr); } }
+    .fcard { background: var(--navy-2); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform .3s var(--ease); }
+    .fcard:hover { transform: translateY(-6px); }
+    .fvis { height: 190px; background: #fff; color: var(--ink); padding: 18px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+    .fbody { padding: 18px 18px 22px; }
+    .fbody h4 { font-size: 16px; line-height: 1.35; font-weight: 700; }
+    .fbody p { margin-top: 8px; font-size: 13px; line-height: 1.55; color: #cfd1d2; }
+    .fbody .tag { display: inline-block; margin-top: 18px; color: var(--pink); font-weight: 700; font-size: 13px; }
+    .center { display: flex; justify-content: center; margin-top: 44px; }
+    /* mini visual */
+    .bar { height: 10px; border-radius: 999px; display: flex; gap: 2px; overflow: hidden; }
+    .bar i { display: block; border-radius: 999px; }
+    .pos-bg { background: var(--green); } .neu-bg { background: var(--blue); } .neg-bg { background: var(--orange); }
+    .vrow { display: grid; grid-template-columns: 88px 1fr 34px; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; }
+    .vrow b { text-align: right; font-weight: 700; }
+    .donut { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto; background: conic-gradient(var(--green) 0 58%, var(--blue) 58% 82%, var(--orange) 82% 100%); display: grid; place-items: center; }
+    .donut::after { content: '+34'; width: 76px; height: 76px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: var(--tile); font-size: 11.5px; font-weight: 600; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .spark { width: 100%; height: 90px; }
+    .alert { display: flex; gap: 10px; align-items: flex-start; font-size: 12px; line-height: 1.45; }
+    .alert .lv { flex: none; height: 22px; padding: 0 8px; border-radius: 999px; font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; }
+
+    /* --------------------------------- cara kerja --------------------------------- */
+    .how { background: var(--navy); color: #fff; padding: 0 0 90px; }
+    .how-head { text-align: center; }
+    .how-head h2 { font-size: clamp(30px, 4vw, 46px); font-weight: 700; letter-spacing: -.01em; }
+    .how-head p { margin-top: 10px; color: #cfd1d2; font-size: 14px; }
+    .steps { margin-top: 44px; display: grid; gap: 22px; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+    .step { border: 1px solid rgba(255,255,255,.14); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; transition: border-color .3s, transform .3s var(--ease); }
+    .step:hover { border-color: var(--pink); transform: translateY(-4px); }
+    .step .num { font-size: 13px; font-weight: 700; color: var(--pink); }
+    .step h4 { margin-top: 14px; font-size: 22px; line-height: 1.25; font-weight: 700; }
+    .step p { margin-top: 10px; font-size: 13.5px; line-height: 1.6; color: #cfd1d2; flex: 1; }
+    .step .btn-arrow { margin-top: 24px; align-self: flex-start; }
+
+    /* ------------------------------ marquee pita biru ------------------------------ */
+    .band { background: var(--blue); color: #fff; padding: 26px 0; }
+    .band .item { display: flex; align-items: center; gap: 26px; padding-right: 26px; font-size: 18px; font-weight: 500; white-space: nowrap; }
+    .star { width: 28px; height: 28px; flex: none; }
+
+    /* --------------------------- contoh pembacaan (kutipan) --------------------------- */
+    .quote { padding: 90px 0 70px; text-align: center; }
+    .quote .qtitle { margin-top: 14px; font-size: clamp(22px, 2.6vw, 30px); font-weight: 700; }
+    .qmark { width: 56px; margin: 30px auto 22px; }
+    .qslides { position: relative; max-width: 820px; margin: 0 auto; min-height: 210px; }
+    .qslide { display: none; }
+    .qslide.on { display: block; animation: fade .4s ease both; }
+    .qslide p { font-size: clamp(19px, 2.2vw, 27px); line-height: 1.5; font-weight: 600; color: var(--blue); }
+    .verdict { margin-top: 22px; display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; font-size: 13px; color: var(--gray); }
+    .verdict .sent { border: 1px solid var(--line); }
+    .qnav { margin-top: 34px; display: flex; justify-content: center; align-items: center; gap: 26px; }
+    .qbtn { width: 42px; height: 42px; border-radius: 50%; background: var(--ink-2); color: #fff; display: grid; place-items: center; transition: background-color .3s; }
+    .qbtn:hover { background: var(--pink); }
+    .qbtn svg { width: 18px; height: 18px; }
+    .qtabs { display: flex; gap: 26px; }
+    .qtab { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-bottom: 8px; position: relative; font-size: 13px; font-weight: 700; font-style: italic; color: var(--blue); opacity: .55; transition: opacity .3s; }
+    .qtab small { font-style: normal; font-weight: 400; font-size: 11px; color: var(--gray); }
+    .qtab::after { content: ''; position: absolute; bottom: 0; left: 25%; right: 25%; height: 3px; border-radius: 3px; background: var(--blue); transform: scaleX(0); transition: transform .3s var(--ease); }
+    .qtab[aria-selected="true"] { opacity: 1; }
+    .qtab[aria-selected="true"]::after { transform: scaleX(1); }
+    .qnote { margin-top: 26px; font-size: 11.5px; color: var(--gray); }
+
+    /* ------------------------------------ bento ------------------------------------ */
+    .bento { padding: 40px 0 100px; }
+    .bgrid { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 900px) { .bgrid { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 170px; } }
+    .bt { border-radius: 20px; background: var(--line); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; min-height: 150px; position: relative; overflow: hidden; }
+    .bt small { font-size: 13px; color: var(--ink-2); line-height: 1.35; }
+    .bt strong { font-size: clamp(30px, 3.2vw, 44px); font-weight: 500; letter-spacing: -.02em; }
+    .bt.big { grid-column: span 2; grid-row: span 2; justify-content: flex-start; }
+    .bt.big h3 { font-size: clamp(30px, 3.6vw, 52px); line-height: 1.12; font-weight: 500; letter-spacing: -.02em; }
+    .bt.big h3 em { font-style: normal; color: var(--pink); }
+    .bt.icon { display: grid; place-items: center; }
+    .bt.purple { background: #c9bdf7; }
+    .bt.peach { background: #ffd2b0; }
+    .squircle { width: 70%; max-width: 120px; aspect-ratio: 1; border-radius: 28%; display: grid; place-items: center; }
+    .squircle svg { width: 60%; fill: #fff; }
+    .bt.navy { background: var(--navy); color: #fff; }
+    .bt.navy small { color: #cfd1d2; }
+    .bt .ico { position: absolute; right: 16px; bottom: 16px; width: 26px; height: 26px; border-radius: 50%; background: var(--pink); display: grid; place-items: center; }
+    .bt .ico svg { width: 14px; height: 14px; fill: #fff; }
+    .bt.tall { grid-row: span 2; }
+
+    /* ------------------------------------ CTA ------------------------------------ */
+    .cta { padding: 60px 0; }
+    .cta-in { position: relative; display: flex; flex-direction: column; gap: 28px; align-items: flex-start; justify-content: space-between; overflow: hidden; }
+    .cta h2 { font-size: clamp(28px, 3vw, 36px); line-height: 1.25; font-weight: 600; max-width: 420px; }
+    .cta .art { display: none; position: relative; width: 180px; height: 120px; }
+    @media (min-width: 900px) { .cta-in { flex-direction: row; align-items: center; padding: 0 120px; } .cta .art { display: block; } }
+    .cta .art img { position: absolute; width: 70px; left: 40px; top: 30px; }
+    .cta .art .dot { display: block; }
+
+    /* ------------------------------------ footer ------------------------------------ */
+    footer { background: var(--navy); color: #fff; padding: 64px 0 36px; }
+    .fgrid { display: grid; gap: 36px; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .fgrid { grid-template-columns: 1.4fr 1fr 1fr 1fr; } }
+    footer .flogo { height: 30px; width: auto; filter: invert(1); }
+    footer p { margin-top: 18px; font-size: 13px; line-height: 1.6; color: #cfd1d2; max-width: 300px; }
+    footer h5 { font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+    footer ul { list-style: none; display: grid; gap: 12px; font-size: 13px; color: #a9b0b8; }
+    footer ul a { transition: color .2s; display: inline-flex; align-items: center; gap: 8px; }
+    footer ul a:hover { color: var(--pink); }
+    footer ul svg { width: 15px; height: 15px; fill: currentColor; }
+    .copy { margin-top: 56px; font-size: 12px; color: #a9b0b8; }
+
+    /* ------------------------------ tombol ke atas ------------------------------ */
+    .top { position: fixed; right: 28px; bottom: 28px; z-index: 60; width: 56px; height: 56px; border-radius: 50%; background: var(--pink); display: grid; place-items: center; box-shadow: 0 0 0 8px rgba(245,93,158,.18); opacity: 0; transform: translateY(20px); pointer-events: none; transition: opacity .3s, transform .3s, background-color .3s; }
+    .top.show { opacity: 1; transform: none; pointer-events: auto; }
+    .top:hover { background: var(--blue); box-shadow: 0 0 0 8px rgba(52,107,200,.18); }
+    .top svg { width: 22px; height: 22px; }
+  </style>
+</head>
+<body>
+  <div id="nprogress" aria-hidden="true"></div>
+
+  <!-- =============================== NAVBAR =============================== -->
+  <header class="nav" id="nav">
+    <div class="wrap nav-in">
+      <a href="/" class="brand" aria-label="DNVB Sosmed Tracker">
+        <img src="/dnvb/logo.png" alt="dnvb" width="90" height="28">
+        <span>Sosmed<br>Tracker</span>
+      </a>
+      <nav class="links" aria-label="Navigasi">
+        <a href="#fitur">Fitur</a>
+        <a href="#kanal">Kanal</a>
+        <a href="#cara-kerja">Cara Kerja</a>
+        <a href="#contoh">Contoh Analisis</a>
+        <a href="https://dnvbindonesia.com" target="_blank" rel="noopener">DNVB Indonesia</a>
+      </nav>
+      <div class="nav-cta">
+        <a href="/dashboard#/topics?new=1" class="login">Tambah Brand</a>
+        <a href="/dashboard" class="pill">Buka Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- =============================== HERO =============================== -->
+    <section class="hero" id="hero">
+      <span class="dot d1" data-px="-0.25" aria-hidden="true"></span>
+      <img class="shape s-flower" data-px="0.18" data-rot="0.08" src="/dnvb/shape-flower.png" alt="" aria-hidden="true">
+      <span class="dot d2" data-px="0.3" aria-hidden="true"></span>
+      <span class="dot d3" data-px="-0.2" aria-hidden="true"></span>
+      <img class="shape s-d" data-px="-0.15" src="/dnvb/shape-d.png" alt="" aria-hidden="true">
+      <span class="dot d4" data-px="0.22" aria-hidden="true"></span>
+      <div class="wrap">
+        <span class="eyebrow" data-r="fade">DNVB Sosmed Tracker</span>
+        <h1 data-r="fade" id="hero-title">
+          <span class="line-mask"><span style="--d:.01s">Dengar apa kata warganet</span></span>
+          <span class="line-mask"><span style="--d:.06s">tentang brand kamu, dan</span></span>
+          <span class="line-mask"><span style="--d:.11s">baca <em>sentimennya</em> sebelum</span></span>
+          <span class="line-mask"><span style="--d:.16s">jadi masalah.</span></span>
+        </h1>
+        <p data-r style="--d:.2s">Pantau percakapan di Instagram, TikTok, Threads, YouTube, sampai media web. Setiap unggahan, komentar, dan berita dinilai positif, netral, atau negatif, lalu dirangkum jadi insight yang siap ditindaklanjuti.</p>
+        <div class="ctas" data-r style="--d:.28s">
+          <a href="/dashboard#/topic/dnvb" class="btn-arrow">
+            <span><img src="/dnvb/arrow-right.png" alt=""><b>Pantau DNVB sekarang</b><img src="/dnvb/arrow-right.png" alt=""></span>
+          </a>
+          <a href="/dashboard#/search" class="ghost">Cek sentimen cepat</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MARQUEE KARTU SEBUTAN (gaya kartu speaker) ===================== -->
+    <section class="cards" aria-label="Contoh sebutan yang dianalisis">
+      <div class="marquee" style="--dur:46s">
+        <div class="marquee-track" id="cards-track"></div>
+        <div class="marquee-track" aria-hidden="true" id="cards-track-2"></div>
+      </div>
+      <p class="cards-note">Contoh ilustrasi bentuk sebutan dan label sentimen, bukan data pantauan sebenarnya.</p>
+    </section>
+
+    <!-- =============================== KANAL =============================== -->
+    <section class="channels" id="kanal">
+      <div class="wrap channels-in">
+        <h3 data-r>Pantau di kanal tempat brand dibicarakan.</h3>
+        <div class="logos" id="logos"></div>
+      </div>
+    </section>
+
+    <!-- =============================== FITUR (section gelap + tab) =============================== -->
+    <section class="dsec" id="fitur">
+      <div class="wrap">
+        <span class="eyebrow dark" data-r="fade">Fitur</span>
+        <h2 data-r>Sentimen jelas. Keputusan lebih cepat.</h2>
+        <p class="lead" data-r style="--d:.06s">Satu dashboard untuk brand DNVB dan semua brand klien.</p>
+        <div class="tabs" role="tablist" aria-label="Fitur" data-r style="--d:.1s">
+          <button class="tab" role="tab" aria-selected="true" data-tab="0">Analisis Sentimen</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="1">Isu & Percakapan</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="2">Kreator & Akun</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="3">Peringatan Dini</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="4">Laporan & AI</button>
+        </div>
+        <div class="panels">
+          <!-- 0: sentimen -->
+          <div class="tpanel on" role="tabpanel" data-panel="0">
+            <article class="fcard" data-r>
+              <div class="fvis"><div class="donut" aria-hidden="true"></div></div>
+              <div class="fbody"><h4>Net sentiment per brand</h4><p>(positif − negatif) ÷ total × 100. Satu angka untuk melihat kesehatan reputasi brand dari hari ke hari.</p><span class="tag">Skor −100 sampai +100</span></div>
+            </article>
+            <article class="fcard" data-r style="--d:.08s">
+              <div class="fvis" aria-hidden="true">
+                <div class="vrow"><span>Instagram</span><div class="bar"><i class="pos-bg" style="flex:62"></i><i class="neu-bg" style="flex:26"></i><i class="neg-bg" style="flex:12"></i></div><b>+50</b></div>
+                <div class="vrow"><span>TikTok</span><div class="bar"><i class="pos-bg" style="flex:48"></i><i class="neu-bg" style="flex:30"></i><i class="neg-bg" style="flex:22"></i></div><b>+26</b></div>
+                <div class="vrow"><span>Threads</span><div class="bar"><i class="pos-bg" style="flex:35"></i><i class="neu-bg" style="flex:35"></i><i class="neg-bg" style="flex:30"></i></div><b>+5</b></div>
+                <div class="vrow"><span>YouTube</span><div class="bar"><i class="pos-bg" style="flex:55"></i><i class="neu-bg" style="flex:35"></i><i class="neg-bg" style="flex:10"></i></div><b>+45</b></div>
+                <div class="vrow"><span>Media web</span><div class="bar"><i class="pos-bg" style="flex:40"></i><i class="neu-bg" style="flex:55"></i><i class="neg-bg" style="flex:5"></i></div><b>+35</b></div>
+              </div>
+              <div class="fbody"><h4>Sentimen per kanal</h4><p>Bandingkan Instagram, TikTok, Threads, YouTube, dan media web. Tahu persis kanal mana yang perlu perhatian.</p><span class="tag">Termasuk komentar</span></div>
+            </article>
+            <article class="fcard" data-r style="--d:.16s">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">“mantul” → positif</span><span class="chip">“zonk” → negatif</span><span class="chip">“nggak nyesel” → positif</span><span class="chip">“bagus banget ya, nunggu sebulan” → negatif</span><span class="chip">🔥 → positif</span></div></div>
+              <div class="fbody"><h4>Paham bahasa warganet</h4><p>AI membaca slang, sarkasme, emoji, dan campuran Indonesia-Inggris. Tanpa AI, leksikon warganet dengan penanganan negasi tetap jalan.</p><span class="tag">Bisa dikoreksi analis</span></div>
+            </article>
+          </div>
+          <!-- 1: isu -->
+          <div class="tpanel" role="tabpanel" data-panel="1">
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true">
+                <div class="vrow"><span>Harga & Promo</span><div class="bar"><i class="pos-bg" style="flex:30"></i><i class="neu-bg" style="flex:30"></i><i class="neg-bg" style="flex:40"></i></div><b>42</b></div>
+                <div class="vrow"><span>Layanan</span><div class="bar"><i class="pos-bg" style="flex:25"></i><i class="neu-bg" style="flex:25"></i><i class="neg-bg" style="flex:50"></i></div><b>31</b></div>
+                <div class="vrow"><span>Edukasi</span><div class="bar"><i class="pos-bg" style="flex:70"></i><i class="neu-bg" style="flex:25"></i><i class="neg-bg" style="flex:5"></i></div><b>58</b></div>
+                <div class="vrow"><span>Konten</span><div class="bar"><i class="pos-bg" style="flex:60"></i><i class="neu-bg" style="flex:30"></i><i class="neg-bg" style="flex:10"></i></div><b>27</b></div>
+              </div>
+              <div class="fbody"><h4>Kategori isu brand</h4><p>Produk, harga, layanan, konten, kreator, event, edukasi, bisnis, karier, dan krisis, lengkap dengan komposisi sentimennya.</p><span class="tag">11 kategori</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">Respons admin lambat</span><span class="chip">Harga kelas mahal</span><span class="chip">Materi daging</span><span class="chip">Host seru</span><span class="chip">Link pendaftaran error</span></div></div>
+              <div class="fbody"><h4>Sub-isu spesifik</h4><p>Bukan sekadar kategori: AI memberi label 2-5 kata untuk tiap percakapan sehingga pola keluhan dan pujian langsung terlihat.</p><span class="tag">Klik untuk lihat sebutan</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><svg class="spark" viewBox="0 0 300 90" fill="none"><path d="M0 70 C30 66 50 60 70 62 S110 40 130 48 170 20 190 30 230 64 250 58 290 50 300 52" stroke="#1DD460" stroke-width="2"/><path d="M0 80 C40 78 60 76 90 78 S140 70 160 74 200 40 220 52 270 76 300 74" stroke="#FF6D00" stroke-width="2"/><circle cx="190" cy="30" r="5" fill="#F55D9E"/></svg></div>
+              <div class="fbody"><h4>Tren harian per sentimen</h4><p>Lihat kapan percakapan ramai, puncaknya di tanggal berapa, dan apakah lonjakannya positif atau negatif.</p><span class="tag">Klik tanggal untuk detail</span></div>
+            </article>
+          </div>
+          <!-- 2: kreator -->
+          <div class="tpanel" role="tabpanel" data-panel="2">
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">@kreator.a · 12x · positif</span><span class="chip">@akun.b · 7x · negatif</span><span class="chip">@media.c · 5x · netral</span></div></div>
+              <div class="fbody"><h4>Tokoh & kreator yang bicara</h4><p>Siapa yang paling sering menyebut brand, bagaimana sikapnya, dan apa kutipannya. Cocok untuk memilih kreator kolaborasi.</p><span class="tag">Sikap per tokoh</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true">
+                <div class="vrow"><span>Akun A</span><div class="bar"><i class="pos-bg" style="flex:80"></i><i class="neg-bg" style="flex:20"></i></div><b>18</b></div>
+                <div class="vrow"><span>Media B</span><div class="bar"><i class="neu-bg" style="flex:70"></i><i class="pos-bg" style="flex:30"></i></div><b>11</b></div>
+                <div class="vrow"><span>Akun C</span><div class="bar"><i class="neg-bg" style="flex:60"></i><i class="neu-bg" style="flex:40"></i></div><b>6</b></div>
+              </div>
+              <div class="fbody"><h4>Akun & media teraktif</h4><p>Peringkat akun dan media yang paling banyak membawa percakapan, lengkap dengan porsi negatifnya.</p><span class="tag">Share of voice</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">👍 1,2 rb suka</span><span class="chip">💬 340 komentar</span><span class="chip">▶ 48 rb tayang</span></div></div>
+              <div class="fbody"><h4>Engagement tiap sebutan</h4><p>Tayang, suka, komentar, dan bagikan ikut dicatat sehingga unggahan negatif yang ramai diprioritaskan.</p><span class="tag">Urut paling ramai</span></div>
+            </article>
+          </div>
+          <!-- 3: peringatan -->
+          <div class="tpanel" role="tabpanel" data-panel="3">
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="alert"><span class="lv" style="background:#ffe4d1;color:#c2410c">Tinggi</span><span><b>Lonjakan negatif</b> di atas rata-rata + 2 simpangan baku pada satu hari.</span></div><div class="alert"><span class="lv" style="background:#fdf0cf;color:#8a5d00">Sedang</span><span><b>Isu "Layanan"</b> 40%+ bernada negatif.</span></div></div>
+              <div class="fbody"><h4>Deteksi lonjakan</h4><p>Hari dengan sebutan negatif yang tidak wajar langsung ditandai, sebelum menjadi viral.</p><span class="tag">Otomatis</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="alert"><span class="lv" style="background:#ffe4d1;color:#c2410c">Tinggi</span><span><b>Media nasional Tier 1</b> memuat 3 berita negatif.</span></div><div class="alert"><span class="lv" style="background:#ffe4d1;color:#c2410c">Tinggi</span><span><b>Unggahan negatif ramai</b>: 48 rb tayang.</span></div></div>
+              <div class="fbody"><h4>Prioritas penanganan</h4><p>Berita negatif di media besar dan unggahan negatif dengan engagement tinggi naik ke daftar teratas.</p><span class="tag">Sebutan negatif terbaru</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">Pagar spam judi online</span><span class="chip">Tolak iklan properti</span><span class="chip">Saringan makna (embedding)</span><span class="chip">Homonim dibuang</span></div></div>
+              <div class="fbody"><h4>Data bersih dari noise</h4><p>Spam, iklan, dan nama yang kebetulan sama disaring sebelum dianalisis, jadi angka sentimen tidak tercemar.</p><span class="tag">Pagar pembatas</span></div>
+            </article>
+          </div>
+          <!-- 4: laporan -->
+          <div class="tpanel" role="tabpanel" data-panel="4">
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">Ringkasan eksekutif</span><span class="chip">Temuan kunci</span><span class="chip">Risiko reputasi</span><span class="chip">Rekomendasi aksi</span></div></div>
+              <div class="fbody"><h4>Ringkasan AI untuk klien</h4><p>Ringkasan eksekutif, temuan berbasis angka, risiko, dan rekomendasi konten atau respons, siap dikirim ke klien.</p><span class="tag">Berbasis data pantauan</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">“Kenapa negatif naik minggu ini?”</span><span class="chip">“Keluhan apa yang paling sering?”</span></div></div>
+              <div class="fbody"><h4>Tanya data</h4><p>Ajukan pertanyaan bebas; jawaban hanya diambil dari data pantauan dan merujuk sebutan aslinya.</p><span class="tag">Dengan rujukan</span></div>
+            </article>
+            <article class="fcard">
+              <div class="fvis" aria-hidden="true"><div class="chips"><span class="chip">PDF</span><span class="chip">CSV</span><span class="chip">JSON</span></div></div>
+              <div class="fbody"><h4>Ekspor laporan</h4><p>Cetak laporan PDF semua tab, atau ekspor CSV/JSON untuk diolah lebih lanjut.</p><span class="tag">Sekali klik</span></div>
+            </article>
+          </div>
+        </div>
+        <div class="center" data-r>
+          <a href="/dashboard" class="btn-arrow sm"><span><img src="/dnvb/arrow-right.png" alt=""><b>Coba di dashboard</b><img src="/dnvb/arrow-right.png" alt=""></span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================== CARA KERJA =============================== -->
+    <section class="how" id="cara-kerja">
+      <div class="wrap">
+        <div class="how-head">
+          <h2 data-r>CARA KERJA</h2>
+          <p data-r style="--d:.06s">Mulai dari brand DNVB sendiri, lalu tambahkan brand klien kapan saja.</p>
+        </div>
+        <div class="steps">
+          <article class="step" data-r>
+            <span class="num">01 · Atur brand</span>
+            <h4>Kata kunci, akun resmi, dan kanal</h4>
+            <p>Isi nama brand, @akun resmi, hashtag, dan konteks singkat agar AI bisa membedakan brand dari nama yang mirip. Pilih kanal: Instagram, TikTok, Threads, YouTube, media web.</p>
+            <a href="/dashboard#/topics?new=1" class="btn-arrow sm"><span><img src="/dnvb/arrow-right.png" alt=""><b>Tambah brand</b><img src="/dnvb/arrow-right.png" alt=""></span></a>
+          </article>
+          <article class="step" data-r style="--d:.08s">
+            <span class="num">02 · Pantau</span>
+            <h4>Unggahan, komentar, dan berita terkumpul</h4>
+            <p>Sistem mengumpulkan sebutan dari semua kanal dalam rentang tanggal pilihan, termasuk komentar di video dan unggahan teramai, lalu membersihkan spam dan duplikat.</p>
+            <a href="/dashboard#/topic/dnvb" class="btn-arrow sm"><span><img src="/dnvb/arrow-right.png" alt=""><b>Pantau DNVB</b><img src="/dnvb/arrow-right.png" alt=""></span></a>
+          </article>
+          <article class="step" data-r style="--d:.16s">
+            <span class="num">03 · Baca sentimen</span>
+            <h4>Positif, netral, negatif, dan alasannya</h4>
+            <p>Setiap sebutan diberi sentimen, skor, alasan, kategori isu, dan tokoh yang disebut. Hasilnya dirangkum jadi dashboard, peringatan dini, dan laporan AI.</p>
+            <a href="/dashboard" class="btn-arrow sm"><span><img src="/dnvb/arrow-right.png" alt=""><b>Lihat dashboard</b><img src="/dnvb/arrow-right.png" alt=""></span></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- =============================== PITA BIRU =============================== -->
+    <section class="band" aria-label="Kanal yang dipantau">
+      <div class="marquee" style="--dur:22s">
+        <div class="marquee-track band-track"></div>
+        <div class="marquee-track band-track" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <!-- =============================== CONTOH ANALISIS =============================== -->
+    <section class="quote" id="contoh">
+      <div class="wrap">
+        <span class="eyebrow" data-r="fade">Contoh analisis</span>
+        <h2 class="qtitle" data-r>Begini sebuah sebutan dibaca</h2>
+        <svg class="qmark" viewBox="0 0 54 35" fill="#F55D9E" aria-hidden="true"><path d="M12.4 35c-1.7 0-3.3-.3-4.8-.9-1.5-.7-2.8-1.6-3.9-2.8C2.6 30.1 1.7 28.7 1 27.1.3 25.4 0 23.6 0 21.6c0-2.6.4-5 1.1-7.1C1.8 12.3 2.8 10.4 4 8.7 5.3 7 6.7 5.6 8.3 4.3 9.9 3 11.6 1.9 13.3 1l3.6 4.9c-2.1 1.1-3.9 2.5-5.4 4.2-1.4 1.7-2.4 3.6-2.9 5.8.4-.1.8-.2 1.3-.2.4-.1.9-.1 1.4-.1 1.5 0 2.9.3 4.2.8 1.3.5 2.4 1.2 3.3 2.1.9.9 1.6 2 2.1 3.2.5 1.2.8 2.6.8 4 0 1.4-.3 2.7-.8 3.9-.5 1.2-1.3 2.2-2.2 3.1-.9.9-2 1.6-3.2 2.1-1.4.5-2.8.8-4.3.8Zm29.4 0c-1.7 0-3.3-.3-4.8-.9-1.5-.7-2.8-1.6-3.9-2.8-1.1-1.2-2-2.6-2.7-4.2-.7-1.7-1-3.5-1-5.5 0-2.6.4-5 1.1-7.1.7-2.1 1.7-4 2.9-5.7 1.3-1.7 2.7-3.1 4.3-4.4 1.6-1.3 3.3-2.4 5-3.3L46.3 5.9c-2.1 1.1-3.9 2.5-5.4 4.2-1.4 1.7-2.4 3.6-2.9 5.8.4-.1.8-.2 1.3-.2.4-.1.9-.1 1.4-.1 1.5 0 2.9.3 4.2.8 1.3.5 2.4 1.2 3.3 2.1.9.9 1.6 2 2.1 3.2.5 1.2.8 2.6.8 4 0 1.4-.3 2.7-.8 3.9-.5 1.2-1.3 2.2-2.2 3.1-.9.9-2 1.6-3.2 2.1-1.4.5-2.8.8-4.3.8Z"/></svg>
+        <div class="qslides" data-r>
+          <div class="qslide on">
+            <p>Bagus banget ya pelayanannya, udah seminggu chat admin nggak dibalas. Padahal cuma mau tanya jadwal kelas 🙄</p>
+            <div class="verdict"><span class="sent neg">Negatif</span><span>skor −0,7 · isu: Layanan & Pengalaman Pelanggan · sub-isu: respons admin lambat · alasan: sarkasme “bagus banget ya” + keluhan tidak dibalas</span></div>
+          </div>
+          <div class="qslide">
+            <p>Ikut kelas dua jam doang tapi materinya daging semua. Langsung kepake buat bisnis aku, nggak nyesel sama sekali 🔥</p>
+            <div class="verdict"><span class="sent pos">Positif</span><span>skor +0,8 · isu: Edukasi & Kelas · sub-isu: materi aplikatif · alasan: “daging”, “nggak nyesel”, emoji 🔥</span></div>
+          </div>
+          <div class="qslide">
+            <p>Ada yang tahu batch berikutnya buka kapan? Sama bisa bayar pakai cicilan nggak ya?</p>
+            <div class="verdict"><span class="sent neu">Netral</span><span>skor 0 · isu: Harga & Promo · sub-isu: pertanyaan jadwal & cicilan · alasan: pertanyaan tanpa penilaian</span></div>
+          </div>
+        </div>
+        <div class="qnav" data-r>
+          <button class="qbtn" id="qprev" aria-label="Contoh sebelumnya"><svg viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="qtabs" role="tablist" aria-label="Pilih contoh">
+            <button class="qtab" role="tab" aria-selected="true" data-q="0">Komentar TikTok<small>sarkasme</small></button>
+            <button class="qtab" role="tab" aria-selected="false" data-q="1">Post Threads<small>slang & emoji</small></button>
+            <button class="qtab" role="tab" aria-selected="false" data-q="2">Komentar Instagram<small>pertanyaan</small></button>
+          </div>
+          <button class="qbtn" id="qnext" aria-label="Contoh berikutnya"><svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+        <p class="qnote">Teks di atas adalah contoh ilustrasi cara sistem menilai sentimen, bukan testimoni atau unggahan nyata.</p>
+      </div>
+    </section>
+
+    <!-- =============================== BENTO =============================== -->
+    <section class="bento">
+      <div class="wrap bgrid">
+        <div class="bt big" data-r>
+          <h3>Satu dashboard untuk <em>brand DNVB</em> dan semua brand klien.</h3>
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.9 6.9L22 10l-5.5 4.7L18.2 22 12 18.3 5.8 22l1.7-7.3L2 10l7.1-1.1z"/></svg></span>
+        </div>
+        <div class="bt" data-r style="--d:.06s"><small>Kanal utama</small><strong>4 sosmed</strong></div>
+        <div class="bt icon purple" data-r style="--d:.12s"><div class="squircle" style="background:var(--purple)"><svg viewBox="0 0 24 24"><path d="M12 0c.9 6.2 5.8 11.1 12 12-6.2.9-11.1 5.8-12 12-.9-6.2-5.8-11.1-12-12C6.2 11.1 11.1 6.2 12 0z"/></svg></div></div>
+        <div class="bt" data-r style="--d:.18s"><small>Kelas sentimen</small><strong>3</strong></div>
+        <div class="bt navy" data-r style="--d:.24s"><small>Kategori isu brand</small><strong>11</strong></div>
+        <div class="bt" data-r style="--d:.06s"><small>Media web: portal berita, blog, RSS</small><strong>+ ratusan</strong></div>
+        <div class="bt icon peach" data-r style="--d:.12s"><div class="squircle" style="background:var(--orange)"><svg viewBox="0 0 24 24"><path d="M12 0c.9 6.2 5.8 11.1 12 12-6.2.9-11.1 5.8-12 12-.9-6.2-5.8-11.1-12-12C6.2 11.1 11.1 6.2 12 0z"/></svg></div></div>
+        <div class="bt" data-r style="--d:.18s"><small>Brand yang bisa dipantau</small><strong>Tanpa batas</strong></div>
+      </div>
+    </section>
+
+    <!-- =============================== CTA =============================== -->
+    <section class="cta">
+      <div class="wrap cta-in">
+        <h2 data-r>Mau pantau brand klien juga?</h2>
+        <div class="art" aria-hidden="true">
+          <span class="dot" style="width:12px;height:12px;background:var(--blue);left:0;top:0"></span>
+          <img src="/dnvb/shape-d.png" alt="">
+          <span class="dot" style="width:10px;height:10px;background:var(--ink);left:140px;top:70px"></span>
+        </div>
+        <a href="/dashboard#/topics?new=1" class="btn-arrow" data-r style="--d:.08s"><span><img src="/dnvb/arrow-right.png" alt=""><b>Tambah brand klien</b><img src="/dnvb/arrow-right.png" alt=""></span></a>
+      </div>
+    </section>
+  </main>
+
+  <!-- =============================== FOOTER =============================== -->
+  <footer>
+    <div class="wrap">
+      <div class="fgrid">
+        <div>
+          <img class="flogo" src="/dnvb/logo.png" alt="dnvb" width="96" height="30">
+          <p>DNVB Sosmed Tracker: social listening dan analisis sentimen brand di Instagram, TikTok, Threads, YouTube, dan media web.</p>
+        </div>
+        <div>
+          <h5>Dashboard</h5>
+          <ul>
+            <li><a href="/dashboard">Ringkasan Brand</a></li>
+            <li><a href="/dashboard#/search">Cek Sentimen Cepat</a></li>
+            <li><a href="/dashboard#/topics">Brand & Kata Kunci</a></li>
+            <li><a href="/dashboard#/sources">Sumber Data</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>Kanal</h5>
+          <ul id="footer-channels"></ul>
+        </div>
+        <div>
+          <h5>DNVB Indonesia</h5>
+          <ul>
+            <li><a href="https://dnvbindonesia.com" target="_blank" rel="noopener">dnvbindonesia.com</a></li>
+            <li><a href="https://www.instagram.com/dnvbindonesia/" target="_blank" rel="noopener" data-ic="instagram">Instagram</a></li>
+            <li><a href="https://www.tiktok.com/@dnvbindonesia" target="_blank" rel="noopener" data-ic="tiktok">TikTok</a></li>
+            <li><a href="https://www.youtube.com/@dnvbindonesia" target="_blank" rel="noopener" data-ic="youtube">YouTube</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copy">© 2026 DNVB Indonesia. All right reserved.</div>
+    </div>
+  </footer>
+
+  <button class="top" id="top" aria-label="Kembali ke atas"><svg viewBox="0 0 24 24" fill="none"><path d="M6 15l6-6 6 6" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+
+  <script>
+    // Logo platform: simple-icons (CC0); merek dagang milik pemiliknya, dipakai untuk menandai kanal.
+    const ICON = {
+      instagram: ['#FF0069', 'M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077'],
+      tiktok: ['#101820', 'M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z'],
+      threads: ['#101820', 'M18.263 11.097c-.03-3.486-1.92-5.586-5.111-5.586-2.13 0-3.922.963-4.863 2.499l2.062 1.438c.535-.843 1.272-1.543 2.628-1.543 1.528 0 2.318.85 2.544 2.431a15 15 0 0 0-2.236-.173c-4.125 0-6.068 1.867-6.068 4.336s1.943 3.99 4.804 3.99c3.139 0 5.013-2.115 5.781-4.735.798.361 1.348 1.204 1.348 2.47 0 3.387-3.907 5.232-7.22 5.232-4.885 0-8.077-3.207-8.077-8.424 0-6.392 4.223-10.487 9.9-10.487 3.808 0 5.69 1.671 6.97 3.914l2.108-1.475C21.44 2.078 18.331 0 13.663 0 6.227 0 1.168 5.277 1.168 12.934c0 7 4.953 11.066 10.856 11.066 4.878 0 9.809-2.846 9.809-7.716 0-2.545-1.46-4.231-3.569-5.187m-6.33 4.855c-1.077 0-2.026-.512-2.026-1.453 0-1.483 1.822-1.934 3.606-1.934.678 0 1.34.045 1.927.173-.422 1.927-1.671 3.215-3.508 3.214Z'],
+      youtube: ['#FF0000', 'M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z'],
+      web: ['#346BC8', 'M4 3h13a2 2 0 0 1 2 2v1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2zm15 5v10a1 1 0 0 0 1 1V8h-1zM5 7v3h10V7H5zm0 5v1h10v-1H5zm0 3v1h10v-1H5z'],
+      rss: ['#FFA500', 'M19.199 24C19.199 13.467 10.533 4.8 0 4.8V0c13.165 0 24 10.835 24 24h-4.801zM3.291 17.415c1.814 0 3.293 1.479 3.293 3.295 0 1.813-1.485 3.29-3.301 3.29C1.47 24 0 22.526 0 20.71s1.475-3.294 3.291-3.295zM15.909 24h-4.665c0-6.169-5.075-11.245-11.244-11.245V8.09c8.727 0 15.909 7.184 15.909 15.91z'],
+    };
+    const svg = (k, color) => `<svg viewBox="0 0 24 24" fill="${color || ICON[k][0]}" aria-hidden="true"><path d="${ICON[k][1]}"/></svg>`;
+
+    // ---------- kartu sebutan (contoh ilustrasi) ----------
+    const CARDS = [
+      ['instagram', 'linear-gradient(160deg,#F55D9E,#c2367a)', 'Kelasnya daging banget, langsung kepake buat jualan.', 'pos', 'Positif'],
+      ['tiktok', 'linear-gradient(160deg,#192430,#0D1420)', 'Admin lama banget balasnya, udah 3 hari.', 'neg', 'Negatif'],
+      ['threads', 'linear-gradient(160deg,#346BC8,#1f4c99)', 'Batch berikutnya buka kapan ya?', 'neu', 'Netral'],
+      ['youtube', 'linear-gradient(160deg,#FF6D00,#d65400)', 'Host-nya seru, insight-nya gak ngebosenin.', 'pos', 'Positif'],
+      ['web', 'linear-gradient(160deg,#1DD460,#109a43)', 'Media: brand lokal makin aktif belajar bisnis digital.', 'neu', 'Netral'],
+      ['instagram', 'linear-gradient(160deg,#5B2BEA,#3c17b0)', 'Harganya agak mahal buat pelajar sih.', 'neg', 'Negatif'],
+      ['tiktok', 'linear-gradient(160deg,#F4BF41,#d79a12)', 'Gak nyesel ikut membership-nya 🔥', 'pos', 'Positif'],
+    ];
+    const LABEL = { instagram: 'Instagram', tiktok: 'TikTok', threads: 'Threads', youtube: 'YouTube', web: 'Media web', rss: 'RSS' };
+    const cardHtml = CARDS.map(([p, bg, q, s, sl]) => `
+      <article class="mcard" style="background:${bg}">
+        <div class="plat">${svg(p, '#fff')}${LABEL[p]}</div>
+        <q>${q}</q>
+        <div class="shade"></div>
+        <div class="meta"><span>contoh ilustrasi</span><span class="sent ${s}">${sl}</span></div>
+      </article>`).join('');
+    document.getElementById('cards-track').innerHTML = cardHtml;
+    document.getElementById('cards-track-2').innerHTML = cardHtml;
+
+    // ---------- logo kanal ----------
+    document.getElementById('logos').innerHTML = ['instagram', 'tiktok', 'threads', 'youtube', 'web', 'rss']
+      .map((k, i) => `<span class="logo" data-r style="--d:${i * 0.06}s">${svg(k)}${LABEL[k]}</span>`).join('');
+    document.getElementById('footer-channels').innerHTML = ['instagram', 'tiktok', 'threads', 'youtube', 'web']
+      .map((k) => `<li><a href="/dashboard">${svg(k, 'currentColor')}${LABEL[k]}</a></li>`).join('');
+    document.querySelectorAll('[data-ic]').forEach((a) => a.insertAdjacentHTML('afterbegin', svg(a.dataset.ic, 'currentColor')));
+
+    // ---------- pita biru ----------
+    const STAR = (c) => `<svg class="star" viewBox="0 0 24 24" fill="${c}" aria-hidden="true"><path d="M12 0c.9 6.2 5.8 11.1 12 12-6.2.9-11.1 5.8-12 12-.9-6.2-5.8-11.1-12-12C6.2 11.1 11.1 6.2 12 0z"/></svg>`;
+    const words = ['Instagram', 'TikTok', 'Threads', 'YouTube', 'Media web', 'Sentimen positif · netral · negatif', 'DNVB Sosmed Tracker'];
+    const colors = ['#F4BF41', '#F55D9E', '#fff'];
+    const bandHtml = words.map((w, i) => `<span class="item">${STAR(colors[i % 3])}${w}</span>`).join('');
+    document.querySelectorAll('.band-track').forEach((t) => (t.innerHTML = bandHtml));
+
+    // ---------- reveal saat masuk layar (fade 400ms / slide-up 500ms, berurutan) ----------
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -60px 0px', threshold: 0.08 });
+    document.querySelectorAll('[data-r]').forEach((el) => io.observe(el));
+
+    // ---------- tab fitur ----------
+    const tabs = [...document.querySelectorAll('.tab')];
+    tabs.forEach((t) => t.addEventListener('click', () => {
+      tabs.forEach((x) => x.setAttribute('aria-selected', String(x === t)));
+      document.querySelectorAll('.tpanel').forEach((p) => p.classList.toggle('on', p.dataset.panel === t.dataset.tab));
+    }));
+
+    // ---------- carousel contoh analisis ----------
+    let qi = 0;
+    const slides = [...document.querySelectorAll('.qslide')];
+    const qtabs = [...document.querySelectorAll('.qtab')];
+    const showQ = (i) => {
+      qi = (i + slides.length) % slides.length;
+      slides.forEach((s, k) => s.classList.toggle('on', k === qi));
+      qtabs.forEach((t, k) => t.setAttribute('aria-selected', String(k === qi)));
+    };
+    qtabs.forEach((t) => t.addEventListener('click', () => showQ(+t.dataset.q)));
+    document.getElementById('qprev').onclick = () => showQ(qi - 1);
+    document.getElementById('qnext').onclick = () => showQ(qi + 1);
+    let auto = setInterval(() => showQ(qi + 1), 6000);
+    document.querySelector('.quote').addEventListener('mouseenter', () => clearInterval(auto));
+
+    // ---------- parallax bentuk hero + navbar + tombol ke atas ----------
+    const px = [...document.querySelectorAll('[data-px]')];
+    const nav = document.getElementById('nav');
+    const topBtn = document.getElementById('top');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let ticking = false;
+    const onScroll = () => {
+      const y = scrollY;
+      nav.classList.toggle('scrolled', y > 8);
+      topBtn.classList.toggle('show', y > 600);
+      if (!reduce) px.forEach((el) => {
+        const r = parseFloat(el.dataset.px), rot = parseFloat(el.dataset.rot || 0);
+        el.style.transform = `translate3d(0, ${y * r}px, 0) rotate(${y * rot}deg)`;
+      });
+      ticking = false;
+    };
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+    topBtn.onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
+
+    // ---------- nprogress: bilah pink saat halaman dimuat dan saat pindah ke dashboard ----------
+    const np = document.getElementById('nprogress');
+    requestAnimationFrame(() => { np.style.transform = 'scaleX(.7)'; });
+    addEventListener('load', () => { np.style.transform = 'scaleX(1)'; np.style.opacity = '0'; });
+    document.querySelectorAll('a[href^="/dashboard"]').forEach((a) => a.addEventListener('click', () => { np.style.transition = 'transform .8s ease'; np.style.opacity = '1'; np.style.transform = 'scaleX(.85)'; }));
+  </script>
+</body>
+</html>

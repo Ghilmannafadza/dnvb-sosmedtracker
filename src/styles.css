@@ -1,0 +1,388 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Token warna DNVB Sosmed Tracker, diambil dari dnvbindonesia.com (CSS produksi, November 2026):
+ *   pink utama #F55D9E (tombol, aksen), biru #346BC8 (hover tombol, badge), navy #101820 (teks),
+ *   navy gelap #0D1420 / #192430 (section gelap), abu #585E63 (teks sekunder), garis #E7E8E9,
+ *   pink lembut #FEEFF5, serta bentuk dekoratif oranye #FF6D00, hijau #1DD460, kuning #F4BF41.
+ * Lihat DESIGN.md.
+ */
+:root {
+  color-scheme: light;
+  --canvas: #ffffff;
+  --wash: #feeff5;
+  --panel: #ffffff;
+  --tile: #f4f4f5;
+  --ink: #101820;
+  --ink-2: #282f36;
+  --muted: #585e63;
+  --line: #e7e8e9;
+  --line-strong: #cfd1d2;
+  --primary: #f55d9e;
+  --primary-soft: #feeff5;
+  --secondary: #346bc8;
+  --secondary-soft: #eaf0fa;
+  --accent: #f55d9e;
+  --accent-ink: #ffffff;
+  --deep: #0d1420;
+  --deep-2: #192430;
+  --deep-ink: #ffffff;
+  --deep-muted: #a9b0b8;
+  --orange: #ff6d00;
+  --green: #1dd460;
+  --yellow: #f4bf41;
+  /* Sentimen: hijau DNVB = positif, biru DNVB = netral, oranye DNVB = negatif */
+  --pos: #1dd460;
+  --neu: #346bc8;
+  --neg: #ff6d00;
+  --warn: #f4bf41;
+  --pos-text: #0b7a37;
+  --neu-text: #2a58a6;
+  --neg-text: #c2410c;
+  --warn-text: #8a5d00;
+  --focus: #346bc8;
+}
+.dark {
+  color-scheme: dark;
+  --canvas: #0d1420;
+  --wash: #1a1424;
+  --panel: #131c2b;
+  --tile: #192430;
+  --ink: #f3f5f7;
+  --ink-2: #cfd1d2;
+  --muted: #9aa3ad;
+  --line: #233042;
+  --line-strong: #344257;
+  --primary: #f55d9e;
+  --primary-soft: #3a1d2c;
+  --secondary: #5b8de0;
+  --secondary-soft: #1b2a44;
+  --accent: #f55d9e;
+  --accent-ink: #ffffff;
+  --deep: #080d16;
+  --deep-2: #131c2b;
+  --deep-ink: #ffffff;
+  --deep-muted: #a9b0b8;
+  --pos: #1dd460;
+  --neu: #5b8de0;
+  --neg: #ff7a1a;
+  --warn: #f4bf41;
+  --pos-text: #5fe596;
+  --neu-text: #9dbdf2;
+  --neg-text: #ffa766;
+  --warn-text: #f7d27a;
+  --focus: #f55d9e;
+}
+
+@theme {
+  /* Plus Jakarta Sans: font yang dipakai dnvbindonesia.com (bobot 200-800). */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-tile: var(--tile);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-deep-2: var(--deep-2);
+  --color-orange: var(--orange);
+  --color-green: var(--green);
+  --color-yellow: var(--yellow);
+  --color-accent-ink: var(--accent-ink);
+  --color-deep: var(--deep);
+  --color-deep-ink: var(--deep-ink);
+  --color-deep-muted: var(--deep-muted);
+  --color-pos: var(--pos);
+  --color-neu: var(--neu);
+  --color-neg: var(--neg);
+  --color-pos-text: var(--pos-text);
+  --color-neu-text: var(--neu-text);
+  --color-warn: var(--warn);
+  --color-warn-text: var(--warn-text);
+  --color-neg-text: var(--neg-text);
+  --radius-panel: 20px;
+  --radius-tile: 14px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum' 1;
+}
+/* Halaman dashboard: kanvas putih bersih seperti dnvbindonesia.com */
+.page-wash {
+  background: var(--canvas);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@layer components {
+  .panel {
+    @apply rounded-[20px] border border-line bg-panel;
+  }
+  .tile {
+    @apply rounded-[14px] bg-tile;
+  }
+  .display {
+    @apply font-bold tracking-[-0.02em] text-ink;
+  }
+  .panel-title {
+    @apply text-[16px] font-semibold tracking-[-0.01em] text-ink;
+  }
+  .meta {
+    @apply text-[12px] text-muted;
+  }
+  .btn {
+    @apply inline-flex h-10 min-w-10 items-center justify-center gap-2 rounded-full border border-line bg-panel px-4 text-[13px] font-semibold text-ink transition duration-300 ease-in-out hover:border-secondary hover:text-secondary disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-dark {
+    @apply border-transparent bg-ink text-canvas hover:border-transparent hover:bg-secondary hover:text-white;
+  }
+  .btn-primary {
+    @apply border-transparent bg-primary text-white hover:border-transparent hover:bg-secondary hover:text-white;
+  }
+  .btn-sm {
+    @apply h-8 min-w-8 px-3 text-[12px];
+  }
+  .btn-icon {
+    @apply px-0;
+  }
+  .corner {
+    @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-tile text-ink-2 transition-colors hover:bg-primary hover:text-white;
+  }
+  .input {
+    @apply h-10 w-full rounded-[12px] border border-line bg-panel px-3 text-[13px] text-ink outline-none placeholder:text-muted focus:border-secondary;
+  }
+  .label {
+    @apply mb-1 block text-[12px] font-medium text-muted;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-tile px-2.5 py-0.5 text-[11.5px] text-ink-2;
+  }
+  /* Pil label gaya "DNVB BUSINESS SCHOOL" di hero dnvbindonesia.com */
+  .eyebrow {
+    @apply inline-flex items-center rounded-full bg-secondary-soft px-3 py-1 text-[11px] font-semibold tracking-wide text-secondary uppercase;
+  }
+  .eyebrow-dark {
+    @apply inline-flex items-center rounded-full bg-[#1f2a3a] px-3 py-1 text-[11px] font-semibold tracking-wide text-white uppercase;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold whitespace-nowrap;
+  }
+  .badge-positive {
+    @apply bg-[color-mix(in_srgb,var(--pos)_16%,transparent)] text-pos-text;
+  }
+  .badge-neutral {
+    @apply bg-[color-mix(in_srgb,var(--neu)_14%,transparent)] text-neu-text;
+  }
+  .badge-warn {
+    @apply bg-[color-mix(in_srgb,var(--warn)_28%,transparent)] text-warn-text;
+  }
+  .badge-muted {
+    @apply bg-tile text-ink-2;
+  }
+  .badge-negative {
+    @apply bg-[color-mix(in_srgb,var(--neg)_14%,transparent)] text-neg-text;
+  }
+  .nav-pill {
+    @apply inline-flex h-10 items-center rounded-full px-4 text-[13.5px] whitespace-nowrap text-ink-2 transition-colors hover:text-primary;
+  }
+  .nav-pill[aria-current='page'] {
+    @apply bg-primary text-white hover:text-white;
+  }
+}
+
+/* -------------------------------------------------------------------------------------------
+ * Motion dnvbindonesia.com
+ * 1. Tombol panah (.button-component-animation): panah kanan bergeser keluar, panah kiri masuk,
+ *    teks ikut bergeser, 300ms ease-in-out; warna pink → biru.
+ * 2. Reveal saat masuk layar (react-awesome-reveal): fade 400ms dan slide-up 500ms "ease", berurutan.
+ * 3. Marquee (react-fast-marquee): geser linear tanpa henti, berhenti saat hover.
+ * ------------------------------------------------------------------------------------------- */
+.btn-arrow {
+  --g: 16px;
+  --a: 18px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background-color 0.3s ease-in-out;
+}
+.btn-arrow:hover:not(:disabled) {
+  background: var(--secondary);
+}
+.btn-arrow:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-arrow > span {
+  display: flex;
+  align-items: center;
+  gap: var(--g);
+  padding: 0 var(--g);
+  margin-left: calc(-1 * (var(--g) + var(--a)));
+  transition: transform 0.3s ease-in-out;
+}
+.btn-arrow:hover:not(:disabled) > span {
+  transform: translateX(calc(var(--g) + var(--a)));
+}
+.btn-arrow .arr {
+  width: var(--a);
+  height: var(--a);
+  flex: none;
+}
+.btn-arrow.dark {
+  background: var(--ink);
+  color: var(--canvas);
+}
+.btn-arrow.dark:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+
+@keyframes dnvb-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dnvb-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+.reveal {
+  opacity: 0;
+}
+.reveal.in {
+  animation: dnvb-rise 0.5s ease both;
+  animation-delay: var(--d, 0ms);
+}
+.reveal-fade.in {
+  animation-name: dnvb-fade;
+  animation-duration: 0.4s;
+}
+@keyframes dnvb-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes dnvb-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes dnvb-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+/* Bilah progres tipis pink di atas layar saat pemantauan berjalan (nprogress dnvbindonesia.com) */
+.top-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 3px;
+  z-index: 60;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary), 0 0 5px var(--primary);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 999px;
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--line);
+}
+.recharts-text {
+  fill: var(--muted);
+}
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-full {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .panel {
+    break-inside: avoid;
+  }
+  .reveal {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}
+
+/* Input tersembunyi (sr-only) di dalam label: tetap di dalam label agar fokus tidak menggulung halaman */
+label:has(> input.sr-only) {
+  position: relative;
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "functions": {
+    "api/collect.ts": {
+      "maxDuration": 60
+    },
+    "api/analyze.ts": {
+      "maxDuration": 60
+    },
+    "api/insight.ts": {
+      "maxDuration": 60
+    },
+    "api/ask.ts": {
+      "maxDuration": 60
+    },
+    "api/enrich.ts": {
+      "maxDuration": 60
+    },
+    "api/semantic.ts": {
+      "maxDuration": 60
+    },
+    "api/photos.ts": {
+      "maxDuration": 60
+    },
+    "api/reach.ts": {
+      "maxDuration": 60
+    },
+    "api/rss.ts": {
+      "maxDuration": 60
+    },
+    "api/records.ts": {
+      "maxDuration": 30
+    }
+  }
+}
