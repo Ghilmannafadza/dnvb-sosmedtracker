@@ -32,9 +32,6 @@
     },
     "api/rss.ts": {
       "maxDuration": 60
-    },
-    "api/records.ts": {
-      "maxDuration": 30
     }
   }
 }
